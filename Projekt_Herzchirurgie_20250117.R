@@ -64,12 +64,14 @@ OperationDurations <- OperationDurations[OperationDurations >= 0]
 # calculation of the mean of the operation duration
 MeanOperationDuration <- mean(OperationDurations, na.rm = TRUE)
 
-# Calculation of half of the mean of the operation duration
-HalfMeanOperationDuration <- MeanOperationDuration / 2
-
-# Defining the Reference points, multiply with 60 to add minutes and not seconds
-ReferencePoints <- PreopDiagTimingSurgSkinIncision + HalfMeanOperationDuration * 60
-
+# Creation of ReferencePoints:
+# For known values of PreopDiagTimingSurgSutureEnd, use this value
+# For missing values (NA), use PreopDiagTimingSurgSkinIncision + MeanOperationDuration
+ReferencePoints <- ifelse(
+  !is.na(PreopDiagTimingSurgSutureEnd),  
+  PreopDiagTimingSurgSutureEnd,         
+  PreopDiagTimingSurgSkinIncision + MeanOperationDuration * 60  
+)
 
 ### ----------------Classification----------------------------------------------
 # Deviding the blood chemistry into classes depending on the time of sampling in relation to the operation
@@ -92,7 +94,8 @@ if (length(SubjectIDs_clinical) == length(ReferencePoints)) {
 # isolation of subjectID, CODE and Auftragsdatum_converted
 SubjectIDs_laboratory <- c(lab_values$subjectID)
 Code <- c(lab_values$CODE)
-Auftragsdatum_converted <- c(lab_values$Auftragsdatum_converted)
+Auftragsdatum <- c(lab_values$Auftragsdatum)
+Auftragsdatum_converted <- as.POSIXct(excel_base_date + Auftragsdatum, origin = "1970-01-01", tz = "UTC")
 
 # dataframe containing subjectID, CODE, Befundtext and Auftragsdatum_converted
 LaboratoryData <- data.frame(
@@ -140,15 +143,9 @@ head(merged_data[, c("SubjectIDs_laboratory", "Auftragsdatum_converted",
                      "ReferencePoints", "TimeDifference", "Code", "Class")])
 
 # Export into Excel-sheet
-write.xlsx(merged_data, file = "merged_data.xlsx", rowNames = FALSE)
+write.xlsx(merged_data, file = "Lab_values_classes.xlsx", rowNames = FALSE)
 
 # print 
 cat("The dataset 'merged_data.xlsx' was succesfully stored in working directory.\n")
-
-
-
-
-
-
 
 
